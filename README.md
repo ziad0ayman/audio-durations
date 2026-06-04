@@ -32,7 +32,7 @@ python align.py <audio_file> <sentences.txt> [model_size] [--debug]
 ### Example
 
 ```
-python align.py lecture.wav my_sentences.txt medium
+python align.py lecture.wav my_sentences.txt small
 ```
 
 Output:
