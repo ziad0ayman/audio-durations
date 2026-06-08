@@ -44,13 +44,21 @@ def do_align():
     if ext not in ALLOWED_EXT:
         return jsonify({"error": f"Unsupported format: {ext}. Allowed: {', '.join(ALLOWED_EXT)}"}), 400
 
-    sentences_text = request.form.get("sentences", "").strip()
-    if not sentences_text:
-        return jsonify({"error": "No sentences provided"}), 400
+    import re as _re
 
-    sentences = [s.strip() for s in sentences_text.split("\n") if s.strip()]
+    raw = request.form.get("sentences", "").strip()
+    if not raw:
+        return jsonify({"error": "No transcript provided"}), 400
+
+    raw = raw.replace("\n", " ")
+    raw = _re.sub(r"\s+", " ", raw)
+
+    sentences = _re.split(r"(?<=[.!?])\s+", raw)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    sentences = [s for s in sentences if s not in (".", "!", "?")]
+
     if not sentences:
-        return jsonify({"error": "No non-empty sentences"}), 400
+        return jsonify({"error": "No sentences found in transcript"}), 400
 
     model_size = request.form.get("model_size", "small")
     if model_size not in MODEL_SIZES:

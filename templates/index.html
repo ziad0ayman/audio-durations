@@ -37,7 +37,7 @@
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <div class="step-text"><strong>Paste</strong> your sentences (one per line)</div>
+        <div class="step-text"><strong>Paste</strong> your full transcript</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -70,8 +70,8 @@
       </div>
 
       <div class="form-group">
-        <label for="sentences">Sentences (one per line, covering all words in order)</label>
-        <textarea id="sentences" name="sentences" placeholder="The bridge that connects our safety goals to actual daily results is a structured management system.&#10;In the early 1970s, the United States established a baseline for this with the Occupational Safety and Health Act.&#10;..." required></textarea>
+        <label for="sentences">Full transcript (paste the whole text — I'll split it by sentences)</label>
+        <textarea id="sentences" name="sentences" placeholder="The bridge that connects our safety goals to actual daily results is a structured management system. In the early 1970s, the United States established a baseline for this with the Occupational Safety and Health Act. ..." required></textarea>
       </div>
 
       <div class="form-group" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
@@ -147,7 +147,7 @@
     <h2>How it works</h2>
     <ol style="padding-left:20px;color:var(--text-muted);font-size:.9rem;">
       <li>Upload an audio file (lecture, podcast, interview, etc.)</li>
-      <li>Paste your sentence-by-sentence transcript (one sentence per line)</li>
+      <li>Paste your full transcript — the app splits it into sentences automatically</li>
       <li>Click <strong>Align sentences</strong> &mdash; the app transcribes the audio with Whisper and matches your sentences using fuzzy alignment</li>
       <li>Each sentence gets a start time, end time (including trailing silence), and duration</li>
       <li>Download the results as CSV or JSON</li>
