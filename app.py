@@ -92,7 +92,9 @@ def download():
     results = data["results"]
 
     if fmt == "json":
-        return jsonify(results), 200, {"Content-Disposition": "attachment; filename=alignment.json"}
+        import json as json_lib
+        body = json_lib.dumps(results, indent=2, ensure_ascii=False)
+        return body, 200, {"Content-Type": "application/json", "Content-Disposition": "attachment; filename=alignment.json"}
     elif fmt == "csv":
         import io
         import csv
