@@ -1,6 +1,6 @@
 # Audio Durations — Sentence Aligner
 
-Align your transcript to any audio file and get precise timestamps for every sentence — including silence between segments.
+Align your transcript to any audio file and get precise timestamps for every sentence — including silence between segments. Just paste the full transcript; the app splits it into sentences automatically.
 
 ![screenshot](https://img.shields.io/badge/status-working-brightgreen)
 
@@ -15,8 +15,8 @@ python app.py
 ## Usage
 
 1. **Upload** an audio file (WAV, MP3, M4A, OGG, FLAC, WebM)
-2. **Paste** your sentence-by-sentence transcript (one sentence per line, in order)
-3. **Click** "Align sentences" — the app transcribes the audio with Whisper and matches your sentences
+2. **Paste** your full transcript (the app splits it into sentences automatically)
+3. **Click** "Align sentences" — the app transcribes the audio with Whisper and matches your transcript
 4. **Results** show start time, end time (with trailing silence), and duration for each sentence
 5. **Download** as CSV or JSON
 
