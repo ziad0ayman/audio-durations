@@ -206,12 +206,22 @@ form.addEventListener("submit", async (e) => {
   const fd = new FormData(form);
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Aligning...';
+  btn.innerHTML = '<span class="spinner"></span> Starting...';
   bar.classList.add("active");
-  fill.style.width = "30%";
+  fill.style.width = "10%";
 
-  try {
+  const tryAlign = async () => {
     const res = await fetch("/align", { method: "POST", body: fd });
+
+    if (res.status === 503) {
+      const data = await res.json();
+      const pos = data.queue || "?";
+      btn.innerHTML = `<span class="spinner"></span> Waiting (${pos} ahead)...`;
+      fill.style.width = "20%";
+      await new Promise(r => setTimeout(r, 3000));
+      return tryAlign();
+    }
+
     fill.style.width = "90%";
     const data = await res.json();
 
@@ -219,6 +229,12 @@ form.addEventListener("submit", async (e) => {
       alert("Error: " + (data.error || "Unknown error"));
       return;
     }
+
+    return data;
+  };
+
+  try {
+    const data = await tryAlign();
 
     lastResults = data.results;
 

@@ -1,6 +1,8 @@
 import os
 import tempfile
 import json
+import time
+import threading
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
@@ -17,6 +19,11 @@ app.config["UPLOAD_FOLDER"].mkdir(parents=True, exist_ok=True)
 ALLOWED_EXT = {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"}
 
 MODEL_SIZES = ["tiny", "base", "small", "medium", "large-v3"]
+
+MAX_CONCURRENT = int(os.environ.get("MAX_CONCURRENT", 2))
+_concurrency = threading.BoundedSemaphore(MAX_CONCURRENT)
+_queue_count = 0
+_queue_lock = threading.Lock()
 
 
 def cleanup_old_files():
@@ -68,11 +75,23 @@ def do_align():
     audio_path = app.config["UPLOAD_FOLDER"] / f"{secrets.token_hex(8)}_{filename}"
     file.save(str(audio_path))
 
+    global _queue_count
+    with _queue_lock:
+        position = _queue_count + 1
+        _queue_count += 1
+
+    acquired = _concurrency.acquire(blocking=False)
+    if not acquired:
+        return jsonify({"error": "Server is busy", "queue": position}), 503
+
     try:
+        with _queue_lock:
+            _queue_count -= 1
         results_raw = align(str(audio_path), sentences, model_size)
     except Exception as e:
         return jsonify({"error": f"Alignment failed: {str(e)}"}), 500
     finally:
+        _concurrency.release()
         audio_path.unlink(missing_ok=True)
         cleanup_old_files()
 
