@@ -2,12 +2,23 @@ import sys
 import re
 from pathlib import Path
 from difflib import SequenceMatcher
+from typing import Optional
 
 from faster_whisper import WhisperModel
 
 
+_model: Optional[WhisperModel] = None
+
+
+def get_model(model_size: str = "small"):
+    global _model
+    if _model is None:
+        _model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    return _model
+
+
 def transcribe_with_words(audio_path: str, model_size: str = "small"):
-    model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    model = get_model(model_size)
     segments, _ = model.transcribe(audio_path, word_timestamps=True)
     words = []
     for seg in segments:
@@ -26,7 +37,6 @@ def read_sentences(path: str):
 
 
 def normalize(text: str):
-    """Lowercase, strip punctuation, collapse whitespace."""
     t = re.sub(r"[^\w'\s]", " ", text).strip().lower()
     return re.sub(r"\s+", " ", t)
 
@@ -36,7 +46,6 @@ def tokenize(text: str):
 
 
 def best_match_start(query_tokens: list[str], word_list: list[str], start_pos: int = 0):
-    """Find where query_tokens best matches word_list using ratio scoring."""
     best_ratio = 0.0
     best_idx = start_pos
     q = " ".join(query_tokens)
@@ -76,7 +85,6 @@ def align_sentences(sentences: list[str], words: list[dict]):
         sent_start = words[idx]["start"]
         sent_end = words[end_idx]["end"]
 
-        # include trailing silence up to the start of the next matching sentence
         if i < len(sentences) - 1:
             next_tokens = tokenize(sentences[i + 1])
             if next_tokens:
@@ -88,10 +96,20 @@ def align_sentences(sentences: list[str], words: list[dict]):
             sent_end = total_duration
 
         duration = sent_end - sent_start
-        results.append((sentence, sent_start, sent_end, duration))
+        results.append({
+            "sentence": sentence,
+            "start": sent_start,
+            "end": sent_end,
+            "duration": round(duration, 3),
+        })
         word_cursor = end_idx + 1
 
     return results
+
+
+def align(audio_path: str, sentences: list[str], model_size: str = "small") -> list[dict]:
+    words = transcribe_with_words(audio_path, model_size)
+    return align_sentences(sentences, words)
 
 
 def format_time(seconds: float) -> str:
@@ -101,14 +119,6 @@ def format_time(seconds: float) -> str:
     if h:
         return f"{h}:{m:02d}:{s:06.3f}"
     return f"{m}:{s:06.3f}"
-
-
-def debug_transcription(words: list[dict]):
-    """Print the full transcription for debugging."""
-    full = " ".join(w["word"] for w in words)
-    print("\n--- Whisper transcription ---", file=sys.stderr)
-    print(full, file=sys.stderr)
-    print("--- end transcription ---\n", file=sys.stderr)
 
 
 def main():
@@ -131,24 +141,26 @@ def main():
         sys.exit(1)
 
     print(f"Transcribing {audio_path} with model '{model_size}' ...", file=sys.stderr)
-    words = transcribe_with_words(audio_path, model_size)
-    print(f"  -> {len(words)} words detected", file=sys.stderr)
+    sentences = read_sentences(sentences_path)
+    print(f"Loaded {len(sentences)} sentences", file=sys.stderr)
+
+    results = align(audio_path, sentences, model_size)
+    print(f"  -> {len(results)} sentences aligned", file=sys.stderr)
 
     debug = "--debug" in sys.argv
     if debug:
-        debug_transcription(words)
-
-    sentences = read_sentences(sentences_path)
-    print(f"Loaded {len(sentences)} sentences from {sentences_path}", file=sys.stderr)
-
-    results = align_sentences(sentences, words)
+        words = transcribe_with_words(audio_path, model_size)
+        full = " ".join(w["word"] for w in words)
+        print("\n--- Whisper transcription ---", file=sys.stderr)
+        print(full, file=sys.stderr)
+        print("--- end transcription ---\n", file=sys.stderr)
 
     print()
     print(f"{'Sentence':<60} {'Start':>12} {'End':>12} {'Duration':>10}")
     print("-" * 96)
-    for sentence, start, end, dur in results:
-        display = sentence[:57] + "..." if len(sentence) > 60 else sentence
-        print(f"{display:<60} {format_time(start):>12} {format_time(end):>12} {dur:>8.3f}s")
+    for r in results:
+        display = r["sentence"][:57] + "..." if len(r["sentence"]) > 60 else r["sentence"]
+        print(f"{display:<60} {format_time(r['start']):>12} {format_time(r['end']):>12} {r['duration']:>8.3f}s")
 
 
 if __name__ == "__main__":

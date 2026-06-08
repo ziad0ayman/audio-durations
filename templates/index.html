@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Durations &mdash; Sentence Aligner</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Google AdSense placeholder — replace with your tag -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+     crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="container">
+    <h1>Audio <span>Durations</span></h1>
+    <nav>
+      <a href="#how" style="color:var(--text-muted);text-decoration:none;font-size:.85rem;">How it works</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container" style="padding-top:24px;">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>Align your transcript to any audio file in seconds</h2>
+    <p>
+      Upload a lecture, podcast, or interview &mdash; paste your own sentence-by-sentence transcript &mdash;
+      and get precise start times, end times (including silence), and durations for every sentence.
+      No manual scrubbing. No expensive software.
+    </p>
+    <div class="hero-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Upload</strong> your audio file</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Paste</strong> your sentences (one per line)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Click</strong> Align &mdash; done in seconds</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ad: leaderboard — after hero, before interaction -->
+  <div class="ad-slot ad-leaderboard">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-0000000000000000"
+         data-ad-slot="1234567890"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+  <!-- Upload card -->
+  <div class="card">
+    <h2>Upload audio &amp; enter sentences</h2>
+    <form id="align-form" enctype="multipart/form-data" autocomplete="off">
+
+      <div class="form-group">
+        <label for="audio">Audio file (WAV, MP3, M4A, OGG, FLAC, WebM)</label>
+        <div class="file-input-wrap">
+          <input type="file" id="audio" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="sentences">Sentences (one per line, covering all words in order)</label>
+        <textarea id="sentences" name="sentences" placeholder="The bridge that connects our safety goals to actual daily results is a structured management system.&#10;In the early 1970s, the United States established a baseline for this with the Occupational Safety and Health Act.&#10;..." required></textarea>
+      </div>
+
+      <div class="form-group" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:140px;">
+          <label for="model_size">Model size</label>
+          <select id="model_size" name="model_size">
+            <option value="tiny">Tiny (fastest)</option>
+            <option value="base">Base</option>
+            <option value="small" selected>Small (recommended)</option>
+            <option value="medium">Medium</option>
+            <option value="large-v3">Large v3 (most accurate)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" id="align-btn">
+          Align sentences
+        </button>
+      </div>
+    </form>
+
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Ad: in-feed — natural break between action and results -->
+  <div class="ad-slot ad-infeed">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-0000000000000000"
+         data-ad-slot="2345678901"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+  <!-- Results card -->
+  <div class="card" id="results-card" style="display:none;">
+    <h2>Results</h2>
+    <div class="results-count" id="results-count"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Sentence</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+    <div class="results-actions">
+      <button class="btn btn-success" id="download-csv">Download CSV</button>
+      <button class="btn btn-outline" id="download-json">Download JSON</button>
+    </div>
+  </div>
+
+  <!-- Ad: banner — after results, before footer (lowest priority slot) -->
+  <div class="ad-slot ad-footer">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-0000000000000000"
+         data-ad-slot="3456789012"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+  <!-- How it works -->
+  <div class="card" id="how">
+    <h2>How it works</h2>
+    <ol style="padding-left:20px;color:var(--text-muted);font-size:.9rem;">
+      <li>Upload an audio file (lecture, podcast, interview, etc.)</li>
+      <li>Paste your sentence-by-sentence transcript (one sentence per line)</li>
+      <li>Click <strong>Align sentences</strong> &mdash; the app transcribes the audio with Whisper and matches your sentences using fuzzy alignment</li>
+      <li>Each sentence gets a start time, end time (including trailing silence), and duration</li>
+      <li>Download the results as CSV or JSON</li>
+    </ol>
+    <p style="margin-top:12px;font-size:.85rem;color:var(--text-muted);">
+      Audio files are processed in memory and deleted immediately. No data is stored on the server.
+    </p>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <p>Audio Durations — built with <a href="https://github.com/SYSTRAN/faster-whisper" style="color:var(--primary);">faster-whisper</a> &amp; Flask</p>
+</footer>
+
+<script>
+async function downloadResults(results, format) {
+  const blob = await fetch("/download", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ results, format }),
+  }).then(r => {
+    if (!r.ok) throw new Error("Download failed");
+    return r.blob();
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `alignment.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function formatTime(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return h
+    ? `${h}:${String(m).padStart(2,"0")}:${s.toFixed(3).padStart(7,"0")}`
+    : `${m}:${s.toFixed(3).padStart(6,"0")}`;
+}
+
+const form = document.getElementById("align-form");
+const btn = document.getElementById("align-btn");
+const bar = document.getElementById("progress-bar");
+const fill = document.getElementById("progress-fill");
+const resultsCard = document.getElementById("results-card");
+const resultsBody = document.getElementById("results-body");
+const resultsCount = document.getElementById("results-count");
+let lastResults = [];
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(form);
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Aligning...';
+  bar.classList.add("active");
+  fill.style.width = "30%";
+
+  try {
+    const res = await fetch("/align", { method: "POST", body: fd });
+    fill.style.width = "90%";
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert("Error: " + (data.error || "Unknown error"));
+      return;
+    }
+
+    lastResults = data.results;
+
+    resultsBody.innerHTML = "";
+    data.results.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td class="sentence-cell">${escapeHtml(r.sentence)}</td>
+        <td class="time-cell">${r.start_fmt}</td>
+        <td class="time-cell">${r.end_fmt}</td>
+        <td class="time-cell">${r.duration.toFixed(3)}s</td>
+      `;
+      resultsBody.appendChild(tr);
+    });
+
+    resultsCount.textContent = `${data.total} sentence${data.total !== 1 ? "s" : ""} aligned`;
+    resultsCard.style.display = "block";
+    fill.style.width = "100%";
+    setTimeout(() => {
+      bar.classList.remove("active");
+      fill.style.width = "0";
+    }, 600);
+    resultsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    alert("Request failed: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Align sentences";
+  }
+});
+
+document.getElementById("download-csv").addEventListener("click", () => {
+  if (lastResults.length) downloadResults(lastResults, "csv");
+});
+document.getElementById("download-json").addEventListener("click", () => {
+  if (lastResults.length) downloadResults(lastResults, "json");
+});
+
+function escapeHtml(text) {
+  const d = document.createElement("div");
+  d.textContent = text;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>

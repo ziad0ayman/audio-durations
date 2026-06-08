@@ -1,66 +1,120 @@
-# Audio Sentence Aligner
+# Audio Durations — Sentence Aligner
 
-Align your own sentence-by-sentence transcript to an audio file and get start time, end time, and duration (including trailing silence) for each sentence.
+Align your transcript to any audio file and get precise timestamps for every sentence — including silence between segments.
 
-## How it works
+![screenshot](https://img.shields.io/badge/status-working-brightgreen)
 
-1. Transcribes the audio with word-level timestamps using [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
-2. Matches each of your sentences against the transcription using fuzzy text alignment
-3. Extends each sentence's end time to include any silence before the next sentence
-4. Outputs a table with start, end, and duration for every sentence
+## Quick start (web)
 
-## Requirements
-
-- Python 3.8+
-- `pip install -r requirements.txt`
+```bash
+pip install -r requirements.txt
+python app.py
+# → http://localhost:5000
+```
 
 ## Usage
 
-```
-python align.py <audio_file> <sentences.txt> [model_size] [--debug]
-```
+1. **Upload** an audio file (WAV, MP3, M4A, OGG, FLAC, WebM)
+2. **Paste** your sentence-by-sentence transcript (one sentence per line, in order)
+3. **Click** "Align sentences" — the app transcribes the audio with Whisper and matches your sentences
+4. **Results** show start time, end time (with trailing silence), and duration for each sentence
+5. **Download** as CSV or JSON
 
-### Arguments
+### CLI (optional)
 
-| Argument       | Description |
-|----------------|-------------|
-| `audio_file`   | Path to audio file (WAV, MP3, etc.) |
-| `sentences.txt` | Text file with **one sentence per line**, covering **all words** in the audio in order |
-| `model_size`   | Whisper model size: `tiny`, `base`, `small` (default), `medium`, `large-v3` |
-| `--debug`      | Print the raw Whisper transcription for troubleshooting |
-
-### Example
-
-```
-python align.py lecture.wav my_sentences.txt small
+```bash
+python align.py audio.wav sentences.txt small
 ```
 
-Output:
+## Google AdSense
 
+Ad slots are placed above the form, between upload and results, and below results.
+
+1. Open `templates/index.html` and replace:
+   - `ca-pub-0000000000000000` → your AdSense publisher ID
+   - `data-ad-slot="1234567890"` etc. → your ad unit slot IDs
+2. Uncomment the AdSense script tag (or keep it as-is after updating)
+
+
+## Oracle Cloud Free Tier deployment
+
+### 1. Provision an instance
+
+Create an **Ampere A1** (ARM) instance with Ubuntu 22.04+ (4 OCPUs, 24 GB RAM free). Open inbound ports **80** and **443** in the security list.
+
+### 2. Install dependencies
+
+```bash
+sudo apt update && sudo apt install -y python3 python3-pip python3-venv nginx certbot python3-certbot-nginx
 ```
-Sentence                                                        Start          End   Duration
-------------------------------------------------------------------------------------------------
-The bridge that connects our safety goals to actual daily...     0:00.000     0:08.280    8.280s
-In the early 1970s, the United States established a basel...     0:08.280     0:20.280   12.000s
+
+### 3. Clone & set up
+
+```bash
+git clone https://github.com/ziad0ayman/audio-durations.git
+cd audio-durations
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Times are in `m:ss.fff` or `h:mm:ss.fff` format. Duration is in seconds.
+**Important:** Whisper models are cached in `~/.cache/huggingface/`. The ARM model cache is compatible — `small` works well on 4 OCPUs.
 
-### Sentences file format
+### 4. Run with systemd
 
+Create `/etc/systemd/system/audio-durations.service`:
+
+```ini
+[Unit]
+Description=Audio Durations
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/audio-durations
+ExecStart=/home/ubuntu/audio-durations/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 --timeout 300 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
-The bridge that connects our safety goals to actual daily results is a structured management system.
-In the early 1970s, the United States established a baseline for this with the Occupational Safety and Health Act.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now audio-durations
 ```
 
-## Model sizes
+### 5. Reverse proxy (nginx)
 
-| Model | Notes |
-|-------|-------|
-| `tiny`  | Fastest, least accurate |
-| `base`  | Good for clean audio |
-| `small` | **Recommended** — good balance |
-| `medium`| Slower, more accurate |
-| `large-v3` | Most accurate, slowest |
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
 
-Models are downloaded automatically on first run. For GPU support: `pip install faster-whisper[cuda]`.
+    client_max_body_size 500M;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 300s;
+    }
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d your-domain.com
+```
+
+## Notes
+
+- Audio files are processed in memory and deleted immediately — no data stored.
+- Max upload size: 500 MB.
+- Models are cached after first download (~1-2 GB depending on size).
+
+## Tech
+
+- **faster-whisper** — word-level transcription (CPU-optimized with CTranslate2)
+- **Flask** — web framework
+- **difflib** — fuzzy sentence matching
