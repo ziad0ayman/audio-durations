@@ -26,6 +26,24 @@ _queue_count = 0
 _queue_lock = threading.Lock()
 
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        message = request.form.get("message", "").strip()
+        if not name or not email or not message:
+            return jsonify({"error": "All fields required"}), 400
+        app.logger.info("Contact from %s (%s): %s", name, email, message[:100])
+        return jsonify({"ok": True})
+    return render_template("contact.html")
+
+
 def cleanup_old_files():
     import time
     now = time.time()
