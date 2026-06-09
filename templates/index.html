@@ -247,7 +247,7 @@ form.addEventListener("submit", async (e) => {
     data.results.forEach((r, i) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${i + 1}</td>
+        <td>${r.number}</td>
         <td class="sentence-cell">${escapeHtml(r.sentence)}</td>
         <td class="time-cell">${r.start_fmt}</td>
         <td class="time-cell">${r.end_fmt}</td>

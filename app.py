@@ -142,8 +142,9 @@ def do_align():
         cleanup_old_files()
 
     results = []
-    for r in results_raw:
+    for i, r in enumerate(results_raw, 1):
         results.append({
+            "number": i,
             "sentence": r["sentence"],
             "start": r["start"],
             "end": r["end"],
@@ -172,9 +173,9 @@ def download():
         import csv
         si = io.StringIO()
         cw = csv.writer(si)
-        cw.writerow(["Sentence", "Start (s)", "End (s)", "Duration (s)", "Start", "End"])
+        cw.writerow(["#", "Sentence", "Start (s)", "End (s)", "Duration (s)", "Start", "End"])
         for r in results:
-            cw.writerow([r["sentence"], r["start"], r["end"], r["duration"], r["start_fmt"], r["end_fmt"]])
+            cw.writerow([r["number"], r["sentence"], r["start"], r["end"], r["duration"], r["start_fmt"], r["end_fmt"]])
         return (
             si.getvalue(),
             200,
