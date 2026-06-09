@@ -50,6 +50,20 @@ sudo apt update && sudo apt install -y python3 python3-pip python3-venv nginx ce
 
 ### 3. Clone & set up
 
+Set these environment variables for email delivery (contact form):
+
+```bash
+export CONTACT_EMAIL="you@example.com"
+export SMTP_HOST="smtp.sendgrid.net"   # or smtp.gmail.com, etc.
+export SMTP_PORT=587
+export SMTP_USER="apikey"              # your SMTP login
+export SMTP_PASS="your-password-or-api-key"
+```
+
+If unset, contact messages are logged to console instead.
+
+### 4. Run
+
 ```bash
 git clone https://github.com/ziad0ayman/audio-durations.git
 cd audio-durations
@@ -72,6 +86,11 @@ After=network.target
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/audio-durations
+Environment=CONTACT_EMAIL=you@example.com
+Environment=SMTP_HOST=smtp.sendgrid.net
+Environment=SMTP_PORT=587
+Environment=SMTP_USER=apikey
+Environment=SMTP_PASS=your-password
 ExecStart=/home/ubuntu/audio-durations/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 --timeout 300 app:app
 Restart=always
 

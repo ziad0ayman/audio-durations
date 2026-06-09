@@ -1,12 +1,15 @@
 import os
-import tempfile
+import re
 import json
 import time
+import smtplib
 import threading
+import tempfile
+import secrets
 from pathlib import Path
+from email.message import EmailMessage
 from flask import Flask, render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
-import secrets
 
 from align import align, format_time
 
@@ -31,6 +34,29 @@ def privacy():
     return render_template("privacy.html")
 
 
+def send_contact_email(name, email, message):
+    to = os.environ.get("CONTACT_EMAIL", "")
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", 587))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+
+    if not to or not smtp_host:
+        app.logger.info("Contact from %s (%s): %s", name, email, message[:100])
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = f"Audio Durations contact from {name}"
+    msg["From"] = smtp_user
+    msg["To"] = to
+    msg.set_content(f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}")
+
+    with smtplib.SMTP(smtp_host, smtp_port) as s:
+        s.starttls()
+        s.login(smtp_user, smtp_pass)
+        s.send_message(msg)
+
+
 @app.route("/contact", methods=["GET", "POST"])
 def contact():
     if request.method == "POST":
@@ -39,7 +65,11 @@ def contact():
         message = request.form.get("message", "").strip()
         if not name or not email or not message:
             return jsonify({"error": "All fields required"}), 400
-        app.logger.info("Contact from %s (%s): %s", name, email, message[:100])
+        try:
+            send_contact_email(name, email, message)
+        except Exception as e:
+            app.logger.error("Failed to send contact email: %s", e)
+            return jsonify({"error": "Failed to send. Try again later."}), 500
         return jsonify({"ok": True})
     return render_template("contact.html")
 
@@ -69,16 +99,14 @@ def do_align():
     if ext not in ALLOWED_EXT:
         return jsonify({"error": f"Unsupported format: {ext}. Allowed: {', '.join(ALLOWED_EXT)}"}), 400
 
-    import re as _re
-
     raw = request.form.get("sentences", "").strip()
     if not raw:
         return jsonify({"error": "No transcript provided"}), 400
 
     raw = raw.replace("\n", " ")
-    raw = _re.sub(r"\s+", " ", raw)
+    raw = re.sub(r"\s+", " ", raw)
 
-    sentences = _re.split(r"(?<=[.!?])\s+", raw)
+    sentences = re.split(r"(?<=[.!?])\s+", raw)
     sentences = [s.strip() for s in sentences if s.strip()]
     sentences = [s for s in sentences if s not in (".", "!", "?")]
 
@@ -137,8 +165,7 @@ def download():
     results = data["results"]
 
     if fmt == "json":
-        import json as json_lib
-        body = json_lib.dumps(results, indent=2, ensure_ascii=False)
+        body = json.dumps(results, indent=2, ensure_ascii=False)
         return body, 200, {"Content-Type": "application/json", "Content-Disposition": "attachment; filename=alignment.json"}
     elif fmt == "csv":
         import io
