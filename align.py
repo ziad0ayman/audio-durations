@@ -156,11 +156,11 @@ def main():
         print("--- end transcription ---\n", file=sys.stderr)
 
     print()
-    print(f"{'Sentence':<60} {'Start':>12} {'End':>12} {'Duration':>10}")
-    print("-" * 96)
-    for r in results:
-        display = r["sentence"][:57] + "..." if len(r["sentence"]) > 60 else r["sentence"]
-        print(f"{display:<60} {format_time(r['start']):>12} {format_time(r['end']):>12} {r['duration']:>8.3f}s")
+    print(f"{'#':>3} {'Sentence':<57} {'Start':>12} {'End':>12} {'Duration':>10}")
+    print("-" * 98)
+    for i, r in enumerate(results, 1):
+        display = r["sentence"][:54] + "..." if len(r["sentence"]) > 57 else r["sentence"]
+        print(f"{i:>3} {display:<57} {format_time(r['start']):>12} {format_time(r['end']):>12} {r['duration']:>8.3f}s")
 
 
 if __name__ == "__main__":
