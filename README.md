@@ -1,139 +1,70 @@
-# Audio Durations — Sentence Aligner
+# Audio Durations
 
-Align your transcript to any audio file and get precise timestamps for every sentence — including silence between segments. Just paste the full transcript; the app splits it into sentences automatically.
+Align a transcript to any audio file and get precise timestamps for every sentence — including silence between segments. Just paste the full transcript; the app splits it into sentences automatically.
 
-![screenshot](https://img.shields.io/badge/status-working-brightgreen)
+![Python](https://img.shields.io/badge/python-3.8+-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-## Quick start (web)
+## Quick start
 
 ```bash
 pip install -r requirements.txt
 python app.py
-# → http://localhost:5000
 ```
+
+Open http://localhost:5000, upload audio, paste transcript, click **Align sentences**.
 
 ## Usage
 
 1. **Upload** an audio file (WAV, MP3, M4A, OGG, FLAC, WebM)
-2. **Paste** your full transcript (the app splits it into sentences automatically)
-3. **Click** "Align sentences" — the app transcribes the audio with Whisper and matches your transcript
-4. **Results** show start time, end time (with trailing silence), and duration for each sentence
-5. **Download** as CSV or JSON
+2. **Paste** your full transcript — the app splits it into sentences automatically
+3. Click **Align sentences** — transcription and alignment happen in one step
+4. Results show start time, end time (with trailing silence), and duration per sentence
+5. Download as CSV or JSON
 
-### CLI (optional)
+### CLI
 
 ```bash
-python align.py audio.wav sentences.txt small
+python align.py audio.wav transcript.txt small
 ```
 
-## Google AdSense
+The transcript file should contain one sentence per line.
+
+## Features
+
+- **Auto-split** — paste raw transcript, the app handles sentence boundaries (`.` `!` `?`)
+- **Fuzzy matching** — handles minor differences between your transcript and the transcription
+- **Silence included** — each sentence's end time extends to the start of the next sentence
+- **Concurrent queue** — handles multiple users with a configurable semaphore (`MAX_CONCURRENT`)
+- **AdSense ready** — ad slots placed at high-visibility, non-intrusive positions
+- **Contact form** — wired to email via SMTP (optional env vars)
+
+## Configuration
+
+| Env var | Default | Description |
+|---------|---------|-------------|
+| `PORT` | `5000` | Web server port |
+| `MAX_CONCURRENT` | `2` | Max parallel alignments |
+| `CONTACT_EMAIL` | — | Email to receive contact form messages |
+| `SMTP_HOST` | — | SMTP server for contact form |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` | — | SMTP login |
+| `SMTP_PASS` | — | SMTP password |
+
+## AdSense
 
 Ad slots are placed above the form, between upload and results, and below results.
 
-1. Open `templates/index.html` and replace:
-   - `ca-pub-0000000000000000` → your AdSense publisher ID
-   - `data-ad-slot="1234567890"` etc. → your ad unit slot IDs
-2. Uncomment the AdSense script tag (or keep it as-is after updating)
-
-
-## Oracle Cloud Free Tier deployment
-
-### 1. Provision an instance
-
-Create an **Ampere A1** (ARM) instance with Ubuntu 22.04+ (4 OCPUs, 24 GB RAM free). Open inbound ports **80** and **443** in the security list.
-
-### 2. Install dependencies
-
-```bash
-sudo apt update && sudo apt install -y python3 python3-pip python3-venv nginx certbot python3-certbot-nginx
-```
-
-### 3. Clone & set up
-
-Set these environment variables for email delivery (contact form):
-
-```bash
-export CONTACT_EMAIL="you@example.com"
-export SMTP_HOST="smtp.sendgrid.net"   # or smtp.gmail.com, etc.
-export SMTP_PORT=587
-export SMTP_USER="apikey"              # your SMTP login
-export SMTP_PASS="your-password-or-api-key"
-```
-
-If unset, contact messages are logged to console instead.
-
-### 4. Run
-
-```bash
-git clone https://github.com/ziad0ayman/audio-durations.git
-cd audio-durations
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-**Important:** Whisper models are cached in `~/.cache/huggingface/`. The ARM model cache is compatible — `small` works well on 4 OCPUs.
-
-### 4. Run with systemd
-
-Create `/etc/systemd/system/audio-durations.service`:
-
-```ini
-[Unit]
-Description=Audio Durations
-After=network.target
-
-[Service]
-User=ubuntu
-WorkingDirectory=/home/ubuntu/audio-durations
-Environment=CONTACT_EMAIL=you@example.com
-Environment=SMTP_HOST=smtp.sendgrid.net
-Environment=SMTP_PORT=587
-Environment=SMTP_USER=apikey
-Environment=SMTP_PASS=your-password
-ExecStart=/home/ubuntu/audio-durations/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 --timeout 300 app:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now audio-durations
-```
-
-### 5. Reverse proxy (nginx)
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    client_max_body_size 500M;
-
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 300s;
-    }
-}
-```
-
-```bash
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d your-domain.com
-```
-
-## Notes
-
-- Audio files are processed in memory and deleted immediately — no data stored.
-- Max upload size: 500 MB.
-- Models are cached after first download (~1-2 GB depending on size).
+1. Open `templates/index.html`
+2. Replace `ca-pub-0000000000000000` with your AdSense publisher ID
+3. Replace slot IDs (`1234567890`, etc.) with your ad unit IDs
 
 ## Tech
 
-- **faster-whisper** — word-level transcription (CPU-optimized with CTranslate2)
+- **faster-whisper** — word-level transcription (CTranslate2, CPU-optimized)
 - **Flask** — web framework
 - **difflib** — fuzzy sentence matching
+- **Gunicorn** — production WSGI server
+
+## License
+
+MIT
