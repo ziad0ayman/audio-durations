@@ -50,14 +50,6 @@ The transcript file should contain one sentence per line.
 | `SMTP_USER` | — | SMTP login |
 | `SMTP_PASS` | — | SMTP password |
 
-## AdSense
-
-Ad slots are placed above the form, between upload and results, and below results.
-
-1. Open `templates/index.html`
-2. Replace `ca-pub-0000000000000000` with your AdSense publisher ID
-3. Replace slot IDs (`1234567890`, etc.) with your ad unit IDs
-
 ## Tech
 
 - **faster-whisper** — word-level transcription (CTranslate2, CPU-optimized)
