@@ -142,9 +142,9 @@ def do_align():
         cleanup_old_files()
 
     results = []
-    for i, r in enumerate(results_raw, 1):
+    for r in results_raw:
         results.append({
-            "number": i,
+            "number": r["number"],
             "sentence": r["sentence"],
             "start": r["start"],
             "end": r["end"],

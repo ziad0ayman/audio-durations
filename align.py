@@ -97,6 +97,7 @@ def align_sentences(sentences: list[str], words: list[dict]):
 
         duration = sent_end - sent_start
         results.append({
+            "number": len(results) + 1,
             "sentence": sentence,
             "start": sent_start,
             "end": sent_end,
