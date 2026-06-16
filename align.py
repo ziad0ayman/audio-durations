@@ -36,6 +36,14 @@ def read_sentences(path: str):
         return [line.strip() for line in f if line.strip()]
 
 
+def split_sentences(text: str) -> list[str]:
+    text = text.replace("\n", " ")
+    text = re.sub(r"\s+", " ", text)
+    parts = re.split(r"(?<=[.!?])\s+", text)
+    parts = [s.strip() for s in parts if s.strip()]
+    return [s for s in parts if s not in (".", "!", "?")]
+
+
 def normalize(text: str):
     t = re.sub(r"[^\w'\s]", " ", text).strip().lower()
     return re.sub(r"\s+", " ", t)

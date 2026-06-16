@@ -1,5 +1,4 @@
 import os
-import re
 import json
 import time
 import smtplib
@@ -11,7 +10,7 @@ from email.message import EmailMessage
 from flask import Flask, render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
 
-from align import align, format_time
+from align import align, split_sentences, format_time
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
@@ -103,12 +102,7 @@ def do_align():
     if not raw:
         return jsonify({"error": "No transcript provided"}), 400
 
-    raw = raw.replace("\n", " ")
-    raw = re.sub(r"\s+", " ", raw)
-
-    sentences = re.split(r"(?<=[.!?])\s+", raw)
-    sentences = [s.strip() for s in sentences if s.strip()]
-    sentences = [s for s in sentences if s not in (".", "!", "?")]
+    sentences = split_sentences(raw)
 
     if not sentences:
         return jsonify({"error": "No sentences found in transcript"}), 400
