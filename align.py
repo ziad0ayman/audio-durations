@@ -132,25 +132,34 @@ def format_time(seconds: float) -> str:
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python align.py <audio_file> <sentences.txt> [model_size]")
+        print("Usage: python align.py <audio_file> <transcript.txt> [model_size] [--split]")
         print()
-        print("  sentences.txt: one sentence per line, covering all words in the audio.")
-        print("  model_size:    tiny / base / small / medium / large-v3  (default: small)")
+        print("  transcript.txt:  one sentence per line, or a full transcript with --split")
+        print("  model_size:      tiny / base / small / medium / large-v3  (default: small)")
+        print("  --split:         split the file into sentences by punctuation automatically")
         sys.exit(1)
 
     audio_path = sys.argv[1]
-    sentences_path = sys.argv[2]
-    model_size = sys.argv[3] if len(sys.argv) > 3 else "small"
+    text_path = sys.argv[2]
+    model_size = sys.argv[3] if len(sys.argv) > 3 and not sys.argv[3].startswith("--") else "small"
+    do_split = "--split" in sys.argv
 
     if not Path(audio_path).exists():
         print(f"Error: audio file not found: {audio_path}", file=sys.stderr)
         sys.exit(1)
-    if not Path(sentences_path).exists():
-        print(f"Error: sentences file not found: {sentences_path}", file=sys.stderr)
+    if not Path(text_path).exists():
+        print(f"Error: file not found: {text_path}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Transcribing {audio_path} with model '{model_size}' ...", file=sys.stderr)
-    sentences = read_sentences(sentences_path)
+
+    if do_split:
+        with open(text_path, "r", encoding="utf-8") as f:
+            raw = f.read()
+        sentences = split_sentences(raw)
+    else:
+        sentences = read_sentences(text_path)
+
     print(f"Loaded {len(sentences)} sentences", file=sys.stderr)
 
     results = align(audio_path, sentences, model_size)
