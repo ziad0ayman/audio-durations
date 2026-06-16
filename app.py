@@ -102,7 +102,14 @@ def do_align():
     if not raw:
         return jsonify({"error": "No transcript provided"}), 400
 
-    sentences = split_sentences(raw)
+    mode = request.form.get("mode", "auto")
+    if mode == "auto":
+        sentences = split_sentences(raw)
+    else:
+        sentences = [s.strip() for s in raw.split("\n") if s.strip()]
+
+    if not sentences:
+        return jsonify({"error": "No sentences found in transcript"}), 400
 
     if not sentences:
         return jsonify({"error": "No sentences found in transcript"}), 400

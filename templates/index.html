@@ -70,8 +70,21 @@
       </div>
 
       <div class="form-group">
-        <label for="sentences">Full transcript (paste the whole text — I'll split it by sentences)</label>
-        <textarea id="sentences" name="sentences" placeholder="The bridge that connects our safety goals to actual daily results is a structured management system. In the early 1970s, the United States established a baseline for this with the Occupational Safety and Health Act. ..." required></textarea>
+        <label>Input mode</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+          <label style="font-weight:400;font-size:.9rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="mode" value="auto" checked onchange="toggleMode()">
+            Full transcript — <em>auto-split</em> by punctuation
+          </label>
+          <label style="font-weight:400;font-size:.9rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="mode" value="manual" onchange="toggleMode()">
+            One sentence per line — <em>manual</em>
+          </label>
+        </div>
+        <textarea id="sentences" name="sentences" placeholder="Paste your full transcript here. The app will split it into sentences automatically." required></textarea>
+        <p id="mode-hint" style="font-size:.8rem;color:var(--text-muted);margin-top:4px;">
+          Splitting on <code>. ! ?</code> followed by a space. Newlines are ignored.
+        </p>
       </div>
 
       <div class="form-group" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
@@ -278,6 +291,19 @@ document.getElementById("download-csv").addEventListener("click", () => {
 document.getElementById("download-json").addEventListener("click", () => {
   if (lastResults.length) downloadResults(lastResults, "json");
 });
+
+function toggleMode() {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const ta = document.getElementById("sentences");
+  const hint = document.getElementById("mode-hint");
+  if (mode === "auto") {
+    ta.placeholder = "Paste your full transcript here. The app will split it into sentences automatically.";
+    hint.innerHTML = 'Splitting on <code>. ! ?</code> followed by a space. Newlines are ignored.';
+  } else {
+    ta.placeholder = "One sentence per line. Each line becomes one segment.";
+    hint.innerHTML = 'Each non-empty line is treated as one sentence. No auto-splitting.';
+  }
+}
 
 function escapeHtml(text) {
   const d = document.createElement("div");

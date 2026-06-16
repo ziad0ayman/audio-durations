@@ -16,7 +16,9 @@ Open http://localhost:5000, upload audio, paste transcript, click **Align senten
 ## Usage
 
 1. **Upload** an audio file (WAV, MP3, M4A, OGG, FLAC, WebM)
-2. **Paste** your full transcript — the app splits it into sentences automatically
+2. **Choose input mode:**
+   - **Auto-split** — paste the full transcript, the app splits it by `. ! ?`
+   - **Manual** — one sentence per line, each line becomes one segment
 3. Click **Align sentences** — transcription and alignment happen in one step
 4. Results show start time, end time (with trailing silence), and duration per sentence
 5. Download as CSV or JSON
@@ -25,9 +27,10 @@ Open http://localhost:5000, upload audio, paste transcript, click **Align senten
 
 ```bash
 python align.py audio.wav transcript.txt small
+python align.py audio.wav full_transcript.txt small --split
 ```
 
-The transcript file should contain one sentence per line.
+Without `--split`, the file should contain one sentence per line. With `--split`, the file is treated as a full transcript and split automatically.
 
 ## Features
 
