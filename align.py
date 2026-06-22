@@ -104,9 +104,15 @@ def align_sentences(sentences: list[str], words: list[dict]):
             sent_end = total_duration
 
         duration = sent_end - sent_start
+
+        matched_words = [w["word"] for w in words[idx:end_idx + 1]]
+        matched_text = " ".join(matched_words)
+
         results.append({
             "number": len(results) + 1,
             "sentence": sentence,
+            "matched_text": matched_text,
+            "confidence": round(ratio, 3),
             "start": sent_start,
             "end": sent_end,
             "duration": round(duration, 3),
@@ -174,11 +180,16 @@ def main():
         print("--- end transcription ---\n", file=sys.stderr)
 
     print()
-    print(f"{'#':>3} {'Sentence':<57} {'Start':>12} {'End':>12} {'Duration':>10}")
-    print("-" * 98)
+    header = f"{'#':>3} {'Your sentence':<55} {'Match':>6} {'Start':>12} {'End':>12} {'Duration':>10}"
+    print(header)
+    print("-" * len(header))
     for i, r in enumerate(results, 1):
-        display = r["sentence"][:54] + "..." if len(r["sentence"]) > 57 else r["sentence"]
-        print(f"{i:>3} {display:<57} {format_time(r['start']):>12} {format_time(r['end']):>12} {r['duration']:>8.3f}s")
+        display = r["sentence"][:52] + "..." if len(r["sentence"]) > 55 else r["sentence"]
+        print(f"{i:>3} {display:<55} {r['confidence']*100:>5.0f}% {format_time(r['start']):>12} {format_time(r['end']):>12} {r['duration']:>8.3f}s")
+
+    print(file=sys.stderr)
+    print("Shown: your sentence | match confidence | start | end | duration", file=sys.stderr)
+    print("To see what the audio actually said, use the web UI or download CSV/JSON.", file=sys.stderr)
 
 
 if __name__ == "__main__":

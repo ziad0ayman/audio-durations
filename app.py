@@ -147,6 +147,8 @@ def do_align():
         results.append({
             "number": r["number"],
             "sentence": r["sentence"],
+            "matched_text": r["matched_text"],
+            "confidence": r["confidence"],
             "start": r["start"],
             "end": r["end"],
             "duration": r["duration"],
@@ -174,9 +176,9 @@ def download():
         import csv
         si = io.StringIO()
         cw = csv.writer(si)
-        cw.writerow(["#", "Sentence", "Start (s)", "End (s)", "Duration (s)", "Start", "End"])
+        cw.writerow(["#", "Sentence", "Audio (transcribed)", "Confidence", "Start (s)", "End (s)", "Duration (s)", "Start", "End"])
         for r in results:
-            cw.writerow([r["number"], r["sentence"], r["start"], r["end"], r["duration"], r["start_fmt"], r["end_fmt"]])
+            cw.writerow([r["number"], r["sentence"], r["matched_text"], r["confidence"], r["start"], r["end"], r["duration"], r["start_fmt"], r["end_fmt"]])
         return (
             si.getvalue(),
             200,

@@ -129,7 +129,9 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Sentence</th>
+            <th>Your sentence</th>
+            <th>Audio (transcribed)</th>
+            <th>Match</th>
             <th>Start</th>
             <th>End</th>
             <th>Duration</th>
@@ -262,6 +264,8 @@ form.addEventListener("submit", async (e) => {
       tr.innerHTML = `
         <td>${r.number}</td>
         <td class="sentence-cell">${escapeHtml(r.sentence)}</td>
+        <td class="sentence-cell" style="color:var(--text-muted);font-size:.85rem;">${escapeHtml(r.matched_text)}</td>
+        <td class="time-cell">${(r.confidence * 100).toFixed(0)}%</td>
         <td class="time-cell">${r.start_fmt}</td>
         <td class="time-cell">${r.end_fmt}</td>
         <td class="time-cell">${r.duration.toFixed(3)}s</td>
