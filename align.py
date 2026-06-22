@@ -72,6 +72,25 @@ def best_match_start(query_tokens: list[str], word_list: list[str], start_pos: i
     return best_idx, best_ratio
 
 
+def diff_words(user_tokens: list[str], audio_tokens: list[str]) -> str:
+    """Return HTML string highlighting differences between user and audio words."""
+    matcher = SequenceMatcher(None, user_tokens, audio_tokens)
+    parts = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            for w in audio_tokens[j1:j2]:
+                parts.append(f"<span class='dw-match'>{w}</span>")
+        elif tag == "replace":
+            for w in audio_tokens[j1:j2]:
+                parts.append(f"<span class='dw-diff'>{w}</span>")
+        elif tag == "delete":
+            pass
+        elif tag == "insert":
+            for w in audio_tokens[j1:j2]:
+                parts.append(f"<span class='dw-extra'>{w}</span>")
+    return " ".join(parts)
+
+
 def align_sentences(sentences: list[str], words: list[dict]):
     word_texts = [w["word"] for w in words]
     total_duration = words[-1]["end"] if words else 0
@@ -107,11 +126,14 @@ def align_sentences(sentences: list[str], words: list[dict]):
 
         matched_words = [w["word"] for w in words[idx:end_idx + 1]]
         matched_text = " ".join(matched_words)
+        user_tokens = tokenize(sentence)
+        diff_html = diff_words(user_tokens, matched_words)
 
         results.append({
             "number": len(results) + 1,
             "sentence": sentence,
             "matched_text": matched_text,
+            "diff_html": diff_html,
             "confidence": round(ratio, 3),
             "start": sent_start,
             "end": sent_end,

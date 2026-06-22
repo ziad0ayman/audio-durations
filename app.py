@@ -148,6 +148,7 @@ def do_align():
             "number": r["number"],
             "sentence": r["sentence"],
             "matched_text": r["matched_text"],
+            "diff_html": r["diff_html"],
             "confidence": r["confidence"],
             "start": r["start"],
             "end": r["end"],

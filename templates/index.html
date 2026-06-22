@@ -264,7 +264,7 @@ form.addEventListener("submit", async (e) => {
       tr.innerHTML = `
         <td>${r.number}</td>
         <td class="sentence-cell">${escapeHtml(r.sentence)}</td>
-        <td class="sentence-cell" style="color:var(--text-muted);font-size:.85rem;">${escapeHtml(r.matched_text)}</td>
+        <td class="sentence-cell" style="color:var(--text-muted);font-size:.85rem;">${r.diff_html}</td>
         <td class="time-cell">${(r.confidence * 100).toFixed(0)}%</td>
         <td class="time-cell">${r.start_fmt}</td>
         <td class="time-cell">${r.end_fmt}</td>

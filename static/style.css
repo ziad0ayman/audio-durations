@@ -289,6 +289,11 @@ textarea:focus, select:focus {
   transition: width .3s;
 }
 
+/* Diff highlighting */
+.dw-match { color: var(--text-muted); }
+.dw-diff { color: var(--danger); font-weight: 600; text-decoration: underline; text-decoration-color: var(--danger); }
+.dw-extra { color: #9333ea; font-weight: 600; font-style: italic; }
+
 /* Results table */
 .table-wrap {
   overflow-x: auto;
