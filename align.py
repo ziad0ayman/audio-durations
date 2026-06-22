@@ -53,14 +53,14 @@ def tokenize(text: str):
     return normalize(text).split()
 
 
-def best_match_start(query_tokens: list[str], word_list: list[str], start_pos: int = 0):
+def best_match_start(query_tokens: list[str], word_list: list[str]):
     best_ratio = 0.0
-    best_idx = start_pos
+    best_idx = 0
     q = " ".join(query_tokens)
+    max_len = max(len(query_tokens), 5)
 
-    search_end = max(start_pos, len(word_list) - len(query_tokens) - 5)
-    for i in range(start_pos, search_end + 1):
-        chunk = word_list[i : i + len(query_tokens)]
+    for i in range(len(word_list) - max_len):
+        chunk = word_list[i : i + max_len]
         c = " ".join(chunk)
         ratio = SequenceMatcher(None, q, c).ratio()
         if ratio > best_ratio:
@@ -73,7 +73,6 @@ def best_match_start(query_tokens: list[str], word_list: list[str], start_pos: i
 
 
 def diff_words(user_tokens: list[str], audio_tokens: list[str]) -> str:
-    """Return HTML string highlighting differences between user and audio words."""
     matcher = SequenceMatcher(None, user_tokens, audio_tokens)
     parts = []
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -95,28 +94,35 @@ def align_sentences(sentences: list[str], words: list[dict]):
     word_texts = [w["word"] for w in words]
     total_duration = words[-1]["end"] if words else 0
 
-    results = []
-    word_cursor = 0
-
+    candidates = []
     for i, sentence in enumerate(sentences):
         tokens = tokenize(sentence)
         if not tokens:
             continue
+        idx, ratio = best_match_start(tokens, word_texts)
+        candidates.append((idx, i, sentence, tokens, ratio))
 
-        idx, ratio = best_match_start(tokens, word_texts, word_cursor)
+    candidates.sort(key=lambda x: x[0])
 
-        if ratio < 0.5:
-            print(f"Warning: poor match ({ratio:.0%}) for sentence {i+1}: {sentence[:50]}...", file=sys.stderr)
+    results = []
+    # assign each word to the sentence whose best-position is closest to it
+    assigned = [-1] * len(words)
+    prev_end = 0
+    for pos, sen_idx, sentence, tokens, ratio in candidates:
+        end = min(pos + len(tokens), len(words))
+        start = max(pos, prev_end)
+        if start >= len(words):
+            break
 
-        end_idx = min(idx + len(tokens) - 1, len(words) - 1)
-        sent_start = words[idx]["start"]
-        sent_end = words[end_idx]["end"]
-
-        if i < len(sentences) - 1:
-            next_tokens = tokenize(sentences[i + 1])
-            if next_tokens:
-                next_idx, _ = best_match_start(next_tokens, word_texts, end_idx + 1)
-                sent_end = words[next_idx]["start"]
+        sent_start = words[start]["start"]
+        if sen_idx < len(sentences) - 1:
+            next_candidate = None
+            for cp, csi, _, _, _ in candidates:
+                if csi == sen_idx + 1:
+                    next_candidate = cp
+                    break
+            if next_candidate is not None and next_candidate > start:
+                sent_end = words[next_candidate]["start"]
             else:
                 sent_end = total_duration
         else:
@@ -124,22 +130,21 @@ def align_sentences(sentences: list[str], words: list[dict]):
 
         duration = sent_end - sent_start
 
-        matched_words = [w["word"] for w in words[idx:end_idx + 1]]
+        matched_words = [w["word"] for w in words[start:end]]
         matched_text = " ".join(matched_words)
-        user_tokens = tokenize(sentence)
-        diff_html = diff_words(user_tokens, matched_words)
+        diff = diff_words(tokens, matched_words)
 
         results.append({
             "number": len(results) + 1,
             "sentence": sentence,
             "matched_text": matched_text,
-            "diff_html": diff_html,
+            "diff_html": diff,
             "confidence": round(ratio, 3),
             "start": sent_start,
             "end": sent_end,
             "duration": round(duration, 3),
         })
-        word_cursor = end_idx + 1
+        prev_end = end
 
     return results
 
