@@ -57,10 +57,10 @@ def best_match_start(query_tokens: list[str], word_list: list[str]):
     best_ratio = 0.0
     best_idx = 0
     q = " ".join(query_tokens)
-    max_len = max(len(query_tokens), 5)
+    n = len(query_tokens)
 
-    for i in range(len(word_list) - max_len):
-        chunk = word_list[i : i + max_len]
+    for i in range(len(word_list) - n + 1):
+        chunk = word_list[i : i + n]
         c = " ".join(chunk)
         ratio = SequenceMatcher(None, q, c).ratio()
         if ratio > best_ratio:
@@ -94,6 +94,7 @@ def align_sentences(sentences: list[str], words: list[dict]):
     word_texts = [w["word"] for w in words]
     total_duration = words[-1]["end"] if words else 0
 
+    # find best position for each sentence independently
     candidates = []
     for i, sentence in enumerate(sentences):
         tokens = tokenize(sentence)
@@ -104,32 +105,46 @@ def align_sentences(sentences: list[str], words: list[dict]):
 
     candidates.sort(key=lambda x: x[0])
 
-    results = []
-    # assign each word to the sentence whose best-position is closest to it
-    assigned = [-1] * len(words)
+    # each sentence ideally claims pos .. pos+len(tokens)
+    spans = []
+    for k, (pos, sen_idx, sentence, tokens, ratio) in enumerate(candidates):
+        ideal_end = min(pos + len(tokens), len(words))
+        spans.append((pos, ideal_end, sen_idx, sentence, tokens, ratio))
+
+    # resolve overlaps: split overlapping region at midpoint
+    resolved = []
     prev_end = 0
-    for pos, sen_idx, sentence, tokens, ratio in candidates:
-        end = min(pos + len(tokens), len(words))
+    for k, (pos, ideal_end, sen_idx, sentence, tokens, ratio) in enumerate(spans):
         start = max(pos, prev_end)
+
+        if k < len(spans) - 1:
+            next_pos = spans[k + 1][0]
+            if ideal_end > next_pos:
+                # overlap: split halfway between the two start positions
+                split = (pos + next_pos) // 2
+                end = max(start, split)
+            else:
+                end = ideal_end
+        else:
+            end = len(words)
+
+        if start >= end:
+            end = ideal_end
         if start >= len(words):
             break
 
+        resolved.append((start, end, sen_idx, sentence, tokens, ratio))
+        prev_end = end
+
+    results = []
+    for start, end, sen_idx, sentence, tokens, ratio in resolved:
         sent_start = words[start]["start"]
-        if sen_idx < len(sentences) - 1:
-            next_candidate = None
-            for cp, csi, _, _, _ in candidates:
-                if csi == sen_idx + 1:
-                    next_candidate = cp
-                    break
-            if next_candidate is not None and next_candidate > start:
-                sent_end = words[next_candidate]["start"]
-            else:
-                sent_end = total_duration
+        if end < len(words):
+            sent_end = words[end]["start"]
         else:
             sent_end = total_duration
 
         duration = sent_end - sent_start
-
         matched_words = [w["word"] for w in words[start:end]]
         matched_text = " ".join(matched_words)
         diff = diff_words(tokens, matched_words)
@@ -144,7 +159,6 @@ def align_sentences(sentences: list[str], words: list[dict]):
             "end": sent_end,
             "duration": round(duration, 3),
         })
-        prev_end = end
 
     return results
 
