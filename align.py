@@ -96,40 +96,44 @@ def align_sentences(sentences: list[str], words: list[dict]):
 
     # find best position for each sentence independently
     candidates = []
-    for i, sentence in enumerate(sentences):
+    for sen_idx, sentence in enumerate(sentences):
         tokens = tokenize(sentence)
         if not tokens:
             continue
         idx, ratio = best_match_start(tokens, word_texts)
-        candidates.append((idx, i, sentence, tokens, ratio))
+        candidates.append((idx, sen_idx, sentence, tokens, ratio))
 
     candidates.sort(key=lambda x: x[0])
 
-    # each sentence ideally claims pos .. pos+len(tokens)
+    # each sentence ideally wants len(tokens) words starting at its best position
     spans = []
-    for k, (pos, sen_idx, sentence, tokens, ratio) in enumerate(candidates):
-        ideal_end = min(pos + len(tokens), len(words))
+    for pos, sen_idx, sentence, tokens, ratio in candidates:
+        ideal_end = pos + len(tokens)
         spans.append((pos, ideal_end, sen_idx, sentence, tokens, ratio))
 
-    # resolve overlaps: split overlapping region at midpoint
+    # resolve overlaps: when two adjacent sentences overlap, split at
+    # the midpoint of the overlap region so both lose equally
     resolved = []
     prev_end = 0
-    for k, (pos, ideal_end, sen_idx, sentence, tokens, ratio) in enumerate(spans):
+    for k in range(len(spans)):
+        pos, ideal_end, sen_idx, sentence, tokens, ratio = spans[k]
         start = max(pos, prev_end)
 
         if k < len(spans) - 1:
             next_pos = spans[k + 1][0]
             if ideal_end > next_pos:
-                # overlap: split halfway between the two start positions
-                split = (pos + next_pos) // 2
+                # overlap — split in the middle of the overlap region
+                split = (next_pos + ideal_end) // 2
                 end = max(start, split)
             else:
-                end = ideal_end
+                # no overlap — extend to next sentence's start to cover silence
+                end = next_pos
         else:
             end = len(words)
 
+        end = min(end, len(words))
         if start >= end:
-            end = ideal_end
+            end = min(start + len(tokens), len(words))
         if start >= len(words):
             break
 
